@@ -1,0 +1,11 @@
+neurons: 64, 16, 4
+learning_rate: 0.02
+regularization: 0.0005
+epochs: 10
+batch_size: 1
+train_samples: 120
+val_samples: 30
+noise_fraction: 0.08
+noise_delta: 0.2
+seed: 11
+data_mode: synthetic

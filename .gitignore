@@ -1,0 +1,17 @@
+# Сборка
+build/
+*.exe
+*.o
+
+# Распакованный датасет
+data/
+
+# Результаты запусков
+heatmap.txt
+heatmap.pgm
+loss_history.txt
+visualization/
+
+# Служебные файлы
+__MACOSX/
+*.log

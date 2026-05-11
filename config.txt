@@ -1,0 +1,21 @@
+# Основная конфигурация для MNIST CSV.
+# Архитектура полностью динамическая: измените эту строку, чтобы добавить или убрать скрытые слои.
+neurons: 784, 64, 10
+
+learning_rate: 0.01
+regularization: 0.0005
+epochs: 20
+batch_size: 1
+
+# Достаточно мало для быстрой демонстрации. Увеличьте значения для более качественного обучения.
+train_samples: 2000
+val_samples: 500
+
+# Требование ТЗ: изменить 5-10% пикселей на +-0.2.
+noise_fraction: 0.08
+noise_delta: 0.2
+seed: 42
+
+data_mode: csv
+csv_train_path: data/mnist_train.csv
+csv_val_path: data/mnist_test.csv

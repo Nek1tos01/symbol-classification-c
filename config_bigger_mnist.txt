@@ -1,0 +1,14 @@
+# Более долгий запуск MNIST для более сильного результата.
+neurons: 784, 128, 64, 10
+learning_rate: 0.01
+regularization: 0.0005
+epochs: 30
+batch_size: 1
+train_samples: 10000
+val_samples: 2000
+noise_fraction: 0.08
+noise_delta: 0.2
+seed: 42
+data_mode: csv
+csv_train_path: data/mnist_train.csv
+csv_val_path: data/mnist_test.csv

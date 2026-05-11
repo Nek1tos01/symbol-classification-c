@@ -1,0 +1,12 @@
+# Демонстрационная конфигурация без внешних файлов.
+neurons: 64, 32, 4
+learning_rate: 0.02
+regularization: 0.0005
+epochs: 20
+batch_size: 1
+train_samples: 400
+val_samples: 100
+noise_fraction: 0.08
+noise_delta: 0.2
+seed: 7
+data_mode: synthetic
