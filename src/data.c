@@ -125,6 +125,7 @@ void apply_noise(Matrix* x, double fraction, double delta) {
 }
 
 // Загружает MNIST-подобный CSV: метка класса, затем 784 пикселя.
+// Метка переводится в one-hot вектор, а пиксели нормализуются к диапазону 0..1.
 static int load_csv_file(const char* path, Dataset* ds) {
     FILE* f = fopen(path, "r");
     char line[8192];
@@ -316,6 +317,8 @@ static int load_mnist_idx(const char* images_path, const char* labels_path, Data
 }
 
 // Выбирает источник данных по конфигу: CSV, IDX MNIST или синтетика.
+// После загрузки к обучающей выборке применяется шум, чтобы проверить
+// устойчивость сети к небольшим искажениям входа.
 int load_or_generate_datasets(const Config* cfg, Dataset* train, Dataset* val) {
     size_t input_dim = cfg->neurons[0];
     size_t classes = cfg->neurons[cfg->neurons_count - 1];

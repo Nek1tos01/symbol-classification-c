@@ -123,6 +123,8 @@ static const char* data_mode_name(DataMode mode) {
 }
 
 // Загружает config.txt, поддерживая записи key=value и key:value.
+// Неизвестные ключи не останавливают программу, но выводятся как предупреждения,
+// чтобы конфиг было проще отлаживать.
 int load_config(const char* path, Config* cfg) {
     FILE* f;
     char line[1024];

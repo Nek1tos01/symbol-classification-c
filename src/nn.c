@@ -34,12 +34,14 @@ static void copy_row_to_vec(const Matrix* src, size_t row, Matrix* dst) {
 }
 
 // Преобразует логиты в вероятности с защитой от переполнения exp().
+// Перед экспонентой вычитается максимум, поэтому softmax остаётся устойчивым
+// даже при больших значениях на выходе последнего слоя.
 static void softmax_stable(Matrix* v) {
     size_t j;
     double max_val = v->data[0];
     double sum = 0.0;
 
-    // Subtract max(logit) before exp to avoid overflow.
+    // Вычитаем max(logit), чтобы exp() не ушёл в переполнение.
     for (j = 1; j < v->cols; ++j) {
         if (v->data[j] > max_val) {
             max_val = v->data[j];
@@ -140,6 +142,8 @@ void network_free(Network* net) {
 }
 
 // Выполняет прямой проход для одного примера.
+// На скрытых слоях применяется ReLU, а на последнем слое softmax,
+// чтобы получить вероятности классов.
 static void forward_sample(Network* net, const Matrix* x, size_t sample_idx) {
     size_t l;
 
@@ -212,10 +216,12 @@ static double l2_penalty(Network* net) {
 }
 
 // Вычисляет ошибки слоёв для одного примера методом backpropagation.
+// Сначала считается ошибка выходного слоя, затем она распространяется
+// назад через веса и производную ReLU.
 static void backprop_sample(Network* net, const Matrix* y, size_t sample_idx, Matrix* deltas) {
     size_t l;
 
-    // For softmax + cross-entropy: dL/dz = y_hat - y.
+    // Для softmax + cross-entropy производная упрощается до y_hat - y.
     l = net->num_layers - 1;
     {
         size_t k;
@@ -235,7 +241,7 @@ static void backprop_sample(Network* net, const Matrix* y, size_t sample_idx, Ma
             for (i = 0; i < net->dims[l + 1]; ++i) {
                 grad += matrix_get(&net->layers[l].weights, i, j) * deltas[l].data[i];
             }
-            // Chain rule through ReLU on hidden layers.
+            // Правило цепочки: переносим ошибку через ReLU скрытого слоя.
             deltas[prev].data[j] = grad * relu_derivative(net->z_values[prev].data[j]);
         }
 
@@ -275,7 +281,7 @@ static void sgd_step(Network* net, double lr, double reg) {
             for (j = 0; j < net->layers[l].weights.cols; ++j) {
                 double w = matrix_get(&net->layers[l].weights, i, j);
                 double g = matrix_get(&net->grad_w[l], i, j);
-                // L2 contributes reg * w to gradient.
+                // L2-регуляризация добавляет reg * w к градиенту веса.
                 w -= lr * (g + reg * w);
                 matrix_set(&net->layers[l].weights, i, j, w);
             }
@@ -333,14 +339,20 @@ double evaluate_accuracy(Network* net, const Dataset* ds) {
 }
 
 // Основной цикл обучения: SGD по примерам, логирование loss и accuracy.
+// Кроме текстового вывода, функция сохраняет историю метрик в файлы,
+// чтобы затем построить графики обучения.
 double train(Network* net, const Config* cfg, const Dataset* train, const Dataset* val) {
     size_t epoch;
     Matrix* deltas = (Matrix*)xcalloc(net->num_layers, sizeof(Matrix));
     double last_val_acc = 0.0;
     FILE* history = fopen("loss_history.txt", "w");
+    FILE* metrics = fopen("metrics_history.txt", "w");
 
     if (history != NULL) {
         fprintf(history, "epoch,loss\n");
+    }
+    if (metrics != NULL) {
+        fprintf(metrics, "epoch,loss,train_acc,val_acc\n");
     }
 
     for (epoch = 0; epoch < net->num_layers; ++epoch) {
@@ -350,7 +362,10 @@ double train(Network* net, const Config* cfg, const Dataset* train, const Datase
     for (epoch = 1; epoch <= cfg->epochs; ++epoch) {
         size_t i;
         double loss = 0.0;
+        double train_acc;
+        double val_acc;
 
+        // Один проход SGD: пример сразу обновляет веса сети.
         for (i = 0; i < train->samples; ++i) {
             forward_sample(net, &train->x, i);
             loss += cross_entropy_one(&net->activations[net->dims_count - 1], &train->y, i);
@@ -365,9 +380,16 @@ double train(Network* net, const Config* cfg, const Dataset* train, const Datase
             fprintf(history, "%zu,%.6f\n", epoch, loss);
         }
 
+        // Accuracy считается после каждой эпохи, чтобы график точности был полноценным.
+        train_acc = evaluate_accuracy(net, train);
+        val_acc = evaluate_accuracy(net, val);
+        last_val_acc = val_acc;
+
+        if (metrics != NULL) {
+            fprintf(metrics, "%zu,%.6f,%.6f,%.6f\n", epoch, loss, train_acc, val_acc);
+        }
+
         if (epoch % 10 == 0 || epoch == 1 || epoch == cfg->epochs) {
-            double train_acc = evaluate_accuracy(net, train);
-            last_val_acc = evaluate_accuracy(net, val);
             printf("эпоха=%zu ошибка=%.6f точность_обучения=%.4f точность_проверки=%.4f\n",
                    epoch, loss, train_acc, last_val_acc);
         }
@@ -379,6 +401,9 @@ double train(Network* net, const Config* cfg, const Dataset* train, const Datase
     xfree(deltas);
     if (history != NULL) {
         fclose(history);
+    }
+    if (metrics != NULL) {
+        fclose(metrics);
     }
 
     return last_val_acc;

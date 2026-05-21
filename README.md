@@ -16,7 +16,8 @@
 - экспорт активаций скрытого слоя в `heatmap.txt`;
 - экспорт grayscale-визуализации в `heatmap.pgm`;
 - экспорт истории ошибки в `loss_history.txt`;
-- Python-визуализация графика ошибки и heatmap;
+- экспорт истории ошибки и точности в `metrics_history.txt`;
+- Python-визуализация графиков loss, accuracy и heatmap;
 - автоматические проверочные тесты.
 
 ## Данные
@@ -125,7 +126,7 @@ cmake --build build
 powershell -NoProfile -ExecutionPolicy Bypass -File ".\tests\run_tests.ps1"
 ```
 
-Тесты собирают программу, запускают синтетический режим, быстрый MNIST CSV-режим, проверяют создание `heatmap.txt`, `heatmap.pgm`, `loss_history.txt`, а также проверяют ошибку на некорректном конфиге.
+Тесты собирают программу, запускают синтетический режим, быстрый MNIST CSV-режим, проверяют создание `heatmap.txt`, `heatmap.pgm`, `loss_history.txt`, `metrics_history.txt`, а также проверяют ошибку на некорректном конфиге.
 
 ## Визуализация
 
@@ -133,9 +134,12 @@ powershell -NoProfile -ExecutionPolicy Bypass -File ".\tests\run_tests.ps1"
 
 - `heatmap.txt` - численные активации первого скрытого слоя;
 - `heatmap.pgm` - grayscale-картинка этих активаций;
-- `loss_history.txt` - CSV-таблица `epoch,loss` для построения графика ошибки.
+- `loss_history.txt` - CSV-таблица `epoch,loss` для построения графика ошибки;
+- `metrics_history.txt` - CSV-таблица `epoch,loss,train_acc,val_acc` для графиков ошибки и точности.
 
 Одна строка heatmap соответствует одному примеру из проверочного набора, один столбец - одному нейрону скрытого слоя.
+
+HTML-визуализация строит три блока: график loss по эпохам, график accuracy по эпохам и тепловую карту активаций. На графиках loss и accuracy эпохи явно подписаны по оси X.
 
 Python-визуализация:
 
@@ -210,7 +214,7 @@ cmake --build build --target visualize
 - `compute_grads` - считает градиенты весов и bias.
 - `sgd_step` - обновляет параметры сети методом SGD.
 - `evaluate_accuracy` - считает точность на наборе данных.
-- `train` - основной цикл обучения.
+- `train` - основной цикл обучения; сохраняет `loss_history.txt` и `metrics_history.txt` для графиков.
 - `export_heatmap` - сохраняет активации скрытого слоя в `heatmap.txt`.
 - `export_heatmap_pgm` - сохраняет активации в виде изображения `heatmap.pgm`.
 - `print_sample_probabilities` - печатает вероятности классов для нескольких примеров.
@@ -224,11 +228,10 @@ cmake --build build --target visualize
 
 ### `scripts/plot_results.py`
 
-- `read_loss` - читает историю ошибки из `loss_history.txt`.
+- `read_metrics` - читает loss, train accuracy и validation accuracy из `metrics_history.txt`.
+- `read_loss_only` - читает старый формат `loss_history.txt`, если `metrics_history.txt` отсутствует.
 - `read_heatmap` - читает активации из `heatmap.txt`.
-- `write_loss_svg` - строит SVG-график ошибки.
-- `write_heatmap_svg` - строит SVG-тепловую карту активаций.
-- `write_index` - создаёт HTML-страницу с визуализациями.
+- `write_index` - создаёт HTML-страницу с интерактивными графиками loss, accuracy и heatmap.
 
 ## Структура Проекта
 
@@ -260,3 +263,4 @@ cmake --build build --target visualize
 - `heatmap.txt` для визуализации: выполнено.
 - Дополнительная визуализация `heatmap.pgm`: выполнено.
 - Экспорт графика ошибки в текстовый файл: выполнено.
+- Экспорт графика точности в текстовый файл: выполнено.

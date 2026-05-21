@@ -13,7 +13,7 @@ if ($LASTEXITCODE -ne 0) {
 
 function Invoke-Case($name, $config) {
     Write-Host "[run] $name"
-    Remove-Item -Force -ErrorAction SilentlyContinue heatmap.txt, heatmap.pgm, loss_history.txt
+    Remove-Item -Force -ErrorAction SilentlyContinue heatmap.txt, heatmap.pgm, loss_history.txt, metrics_history.txt
     $output = & ".\nn_classifier.exe" $config 2>&1
     $output | Set-Content -Encoding UTF8 "tests\last_$name.log"
     if ($LASTEXITCODE -ne 0) {
@@ -28,6 +28,9 @@ function Invoke-Case($name, $config) {
     }
     if (-not (Test-Path -LiteralPath "loss_history.txt")) {
         throw "$name did not create loss_history.txt"
+    }
+    if (-not (Test-Path -LiteralPath "metrics_history.txt")) {
+        throw "$name did not create metrics_history.txt"
     }
     Write-Host "[pass] $name"
 }
